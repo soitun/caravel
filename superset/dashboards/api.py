@@ -34,10 +34,15 @@ from werkzeug.wsgi import FileWrapper
 
 from superset import db, is_feature_enabled, thumbnail_cache
 from superset.charts.schemas import ChartEntityResponseSchema
+from superset.commands.dashboard.copy import CopyDashboardCommand
 from superset.commands.dashboard.create import CreateDashboardCommand
-from superset.commands.dashboard.delete import DeleteDashboardCommand
+from superset.commands.dashboard.delete import (
+    DeleteDashboardCommand,
+    DeleteEmbeddedDashboardCommand,
+)
 from superset.commands.dashboard.exceptions import (
     DashboardAccessDeniedError,
+    DashboardCopyError,
     DashboardCreateFailedError,
     DashboardDeleteFailedError,
     DashboardForbiddenError,
@@ -60,7 +65,8 @@ from superset.dashboards.filters import (
     DashboardCreatedByMeFilter,
     DashboardFavoriteFilter,
     DashboardHasCreatedByFilter,
-    DashboardTagFilter,
+    DashboardTagIdFilter,
+    DashboardTagNameFilter,
     DashboardTitleOrSlugFilter,
     FilterRelatedRoles,
 )
@@ -244,7 +250,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         "dashboard_title": [DashboardTitleOrSlugFilter],
         "id": [DashboardFavoriteFilter, DashboardCertifiedFilter],
         "created_by": [DashboardCreatedByMeFilter, DashboardHasCreatedByFilter],
-        "tags": [DashboardTagFilter],
+        "tags": [DashboardTagIdFilter, DashboardTagNameFilter],
     }
 
     base_order = ("changed_on", "desc")
@@ -270,6 +276,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
     base_related_field_filters = {
         "owners": [["id", BaseFilterRelatedUsers, lambda: []]],
         "created_by": [["id", BaseFilterRelatedUsers, lambda: []]],
+        "changed_by": [["id", BaseFilterRelatedUsers, lambda: []]],
         "roles": [["id", BaseFilterRelatedRoles, lambda: []]],
     }
 
@@ -277,6 +284,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
         "owners": RelatedFieldFilter("first_name", FilterRelatedOwners),
         "roles": RelatedFieldFilter("name", FilterRelatedRoles),
         "created_by": RelatedFieldFilter("first_name", FilterRelatedOwners),
+        "changed_by": RelatedFieldFilter("first_name", FilterRelatedOwners),
     }
     allowed_rel_fields = {"owners", "roles", "created_by", "changed_by"}
 
@@ -1544,7 +1552,7 @@ class DashboardRestApi(BaseSupersetModelRestApi):
             500:
               $ref: '#/components/responses/500'
         """
-        EmbeddedDashboardDAO.delete(dashboard.embedded)
+        DeleteEmbeddedDashboardCommand(dashboard).run()
         return self.response(200, message="OK")
 
     @expose("/<id_or_slug>/copy/", methods=("POST",))
@@ -1603,9 +1611,11 @@ class DashboardRestApi(BaseSupersetModelRestApi):
             return self.response_400(message=error.messages)
 
         try:
-            dash = DashboardDAO.copy_dashboard(original_dash, data)
+            dash = CopyDashboardCommand(original_dash, data).run()
         except DashboardForbiddenError:
             return self.response_403()
+        except DashboardCopyError:
+            return self.response_400()
 
         return self.response(
             200,
