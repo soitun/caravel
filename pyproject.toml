@@ -38,7 +38,7 @@ dependencies = [
     # no bounds for apache-superset-core until we have a stable version
     "apache-superset-core",
     "backoff>=1.8.0",
-    "celery>=5.3.6, <6.0.0",
+    "celery>=5.6.3, <6.0.0",
     "click>=8.4.0",
     "click-option-group",
     "colorama",
