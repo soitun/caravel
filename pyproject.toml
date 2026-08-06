@@ -184,7 +184,7 @@ elasticsearch = ["elasticsearch-dbapi>=0.2.13, <0.3.0"]
 # (>=6.0.0) with no dual-compat release. Capped below 6.0.0 for now; bump to
 # >=6.0.0,<8.0 in lockstep with Superset's own SQLAlchemy 2.0 core bump
 # (discussion #40273), not before.
-exasol = ["sqlalchemy-exasol>=2.4.0, <6.0.0"]
+exasol = ["sqlalchemy-exasol>=7.1.1, <8.0.0"]
 excel = ["xlrd>=2.0.2, <2.1"]
 # Async dashboard "Export Data/Images to Excel": uploads the workbook to S3 and
 # emails a pre-signed link. boto3 is imported lazily by superset.utils.s3, so
