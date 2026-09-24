@@ -204,7 +204,7 @@ excel-export = ["boto3"]
 # >=1.37 for ``Blob.open``, which superset.utils.gcs streams downloads through.
 excel-export-gcs = ["google-cloud-storage>=1.37"]
 fastmcp = [
-    "fastmcp>=3.4.7,<4.0",
+    "fastmcp>=4.0.5,<5.0",
     # fastmcp 3.x itself requires mcp<2.0; the upper bound here was looser
     # than that until Dependabot proposed mcp 2.1.1 and the resolver caught
     # the conflict (#43876). Capped to match what fastmcp 3.x actually
